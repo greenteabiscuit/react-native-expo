@@ -1,12 +1,15 @@
 import * as WebBrowser from 'expo-web-browser';
 import React from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet, TouchableOpacity, Button, Alert } from 'react-native';
 
 import Colors from '../constants/Colors';
 import { MonoText } from './StyledText';
 import { Text, View } from './Themed';
 
 export default function EditScreenInfo({ path }: { path: string }) {
+  const BLE = () => {
+    Alert.alert("BLE Processing...")
+  };
   return (
     <View>
       <View style={styles.getStartedContainer}>
@@ -24,12 +27,12 @@ export default function EditScreenInfo({ path }: { path: string }) {
           <MonoText>{path}</MonoText>
         </View>
 
-        <Text
-          style={styles.getStartedText}
-          lightColor="rgba(0,0,0,0.8)"
-          darkColor="rgba(255,255,255,0.8)">
-          Change any of the text, save the file, and your app will automatically update.
-        </Text>
+        <Button
+          onPress={() => BLE()}
+          title="Bluetooth"
+          color="#841584"
+          accessibilityLabel="Learn more about this purple button"
+        />
       </View>
 
       <View style={styles.helpContainer}>
