@@ -1,15 +1,100 @@
 import * as WebBrowser from 'expo-web-browser';
-import React from 'react';
-import { StyleSheet, TouchableOpacity, Button, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, TouchableOpacity, Button, Alert, NativeEventEmitter, NativeModules, Platform, PermissionsAndroid, } from 'react-native';
 
 import Colors from '../constants/Colors';
 import { MonoText } from './StyledText';
 import { Text, View } from './Themed';
+import BleManager from 'react-native-ble-manager';
+
+const BleManagerModule = NativeModules.BleManager;
+const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+
+type data = {
+  peripheral: peripheral
+  characteristic: characteristic
+  value: number
+}
+
+type peripheral = {
+  id : number
+  name: string
+  connected: boolean
+}
+
+type characteristic = {
+
+}
 
 export default function EditScreenInfo({ path }: { path: string }) {
+  const [isScanning, setIsScanning] = useState(false);
+  const peripherals = new Map<number, peripheral>([]);
+  const [list, setList] = useState<peripheral[]>([]);
+
   const BLE = () => {
     Alert.alert("BLE Processing...")
   };
+
+  const handleStopScan = () => {
+    console.log('Scan is stopped');
+    setIsScanning(false);
+  }
+
+  const handleDisconnectedPeripheral = (data: data) => {
+    let peripheral = peripherals.get(data.peripheral.id);
+    if (peripheral) {
+      peripheral.connected = false;
+      peripherals.set(peripheral.id, peripheral);
+      setList(Array.from(peripherals.values()));
+    }
+    console.log('Disconnected from ' + data.peripheral);
+  }
+
+  const handleUpdateValueForCharacteristic = (data: data) => {
+    console.log('Received data from ' + data.peripheral + ' characteristic ' + data.characteristic, data.value);
+  }
+
+  const handleDiscoverPeripheral = (peripheral: peripheral) => {
+    console.log('Got ble peripheral', peripheral);
+    if (!peripheral.name) {
+      peripheral.name = 'NO NAME';
+    }
+    peripherals.set(peripheral.id, peripheral);
+    setList(Array.from(peripherals.values()));
+  }
+
+  useEffect(() => {
+    BleManager.start({showAlert: false});
+  
+    bleManagerEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
+    bleManagerEmitter.addListener('BleManagerStopScan', handleStopScan );
+    bleManagerEmitter.addListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral );
+    bleManagerEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic );
+
+    if (Platform.OS === 'android' && Platform.Version >= 23) {
+      PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION).then((result) => {
+          if (result) {
+            console.log("Permission is OK");
+          } else {
+            PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION).then((result) => {
+              if (result) {
+                console.log("User accept");
+              } else {
+                console.log("User refuse");
+              }
+            });
+          }
+      });
+    }  
+    
+    return (() => {
+      console.log('unmount');
+      bleManagerEmitter.removeListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
+      bleManagerEmitter.removeListener('BleManagerStopScan', handleStopScan );
+      bleManagerEmitter.removeListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral );
+      bleManagerEmitter.removeListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValueForCharacteristic );
+    })
+  }, []);
   return (
     <View>
       <View style={styles.getStartedContainer}>
