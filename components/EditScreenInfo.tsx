@@ -12,7 +12,7 @@ const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
 type data = {
   peripheral: peripheral
-  characteristic: characteristic
+  characteristic: string
   value: number
 }
 
@@ -20,10 +20,6 @@ type peripheral = {
   id : number
   name: string
   connected: boolean
-}
-
-type characteristic = {
-
 }
 
 export default function EditScreenInfo({ path }: { path: string }) {
